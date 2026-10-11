@@ -329,6 +329,109 @@ st_done:
     pop bp
     ret 12
 
+; [bp-10] rows to  be  moved / blank
+; [bp-8]  current row
+; [bp-6]  n (clamped)
+; [bp-4]  interior height : bottom -  top - 1 
+; [bp-2]  interior width : right - left - 1 
+; [bp+4]  n (lines to scroll)
+; [bp+6]  right
+; [bp+8]  bottom
+; [bp+10] left
+; [bp+12] top
+
+; scroll_window_up(top, left, bottom, right, n)
+; moves only the interior up by n rows, so the border is safe
+scroll_window_up:
+    push bp
+    mov bp, sp
+    sub sp, 10
+    push ax
+    push cx
+    push si
+    push di
+    push ds
+    push es
+    cld
+    mov ax, [bp+6]              ; right
+    sub ax, [bp+10]             ; - left
+    dec ax
+    mov [bp-2], ax              ; interior width
+    mov ax, [bp+8]              ; bottom
+    sub ax, [bp+12]             ; - top
+    dec ax
+    mov [bp-4], ax              ; interior height
+    mov ax, [bp+4]              ; n
+    cmp ax, [bp-4]
+    jbe sw_n_OK
+    mov ax, [bp-4]              ; clamp n down to the interior height In-case n > interior height
+sw_n_OK:
+    mov [bp-6], ax
+    mov ax, [bp+12]             ; top
+    inc ax
+    mov [bp-8], ax              ; first interior row
+    mov ax, [bp-4]
+    sub ax, [bp-6]
+    mov [bp-10], ax             ; rows to be moved interior height - n
+    mov ax, 0xb800
+    mov ds, ax
+    mov es, ax
+
+sw_move:
+    cmp word [bp-10], 0
+    je sw_blank
+    mov ax, [bp-8]              ; destination row
+    push ax
+    mov ax, [bp+10]             ; left
+    inc ax                      ; left + 1 First interior column
+    push ax
+    call calculate_offset
+    mov di, ax
+    mov ax, [bp-8]              ; source = destination row + n
+    add ax, [bp-6]
+    push ax
+    mov ax, [bp+10]             ; left
+    inc ax                      ; left + 1 First interior column
+    push ax
+    call calculate_offset
+    mov si, ax
+    mov cx, [bp-2]
+    rep movsw                   
+    inc word [bp-8]      
+    dec word [bp-10]
+    jmp sw_move
+
+sw_blank:
+    mov ax, [bp-6]
+    mov [bp-10], ax             ; n rows to be blank
+sw_bl:
+    cmp word [bp-10], 0
+    je sw_done
+    mov ax, [bp-8]              ; current row to be blanked 
+    push ax
+    mov ax, [bp+10]
+    inc ax
+    push ax
+    call calculate_offset
+    mov di, ax
+    mov cx, [bp-2]
+    mov ax, 0x0720              ; black space 
+    rep stosw
+    inc word [bp-8]
+    dec word [bp-10]
+    jmp sw_bl
+
+sw_done:
+    pop es
+    pop ds
+    pop di
+    pop si
+    pop cx
+    pop ax
+    mov sp, bp
+    pop bp
+    ret 10
+
 start:          
 
 mov ax, 0x4c00
