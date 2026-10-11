@@ -47,6 +47,19 @@ doc:
  db 'Good assembly programs respect the stack discipline.',0
  db 0xFF
 
+calculate_offset:    
+    push bp
+    mov bp, sp
+    push dx
+    mov ax, [bp+6]     ; row
+    mov dx, 80
+    mul dx             ; AX = row * 80
+    add ax, [bp+4]     ; + col
+    shl ax, 1          ; * 2 bytes per cell
+    pop dx
+    pop bp
+    ret 4
+
 clear_screen:   
     push bp
     mov bp, sp
