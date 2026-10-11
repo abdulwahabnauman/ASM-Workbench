@@ -167,6 +167,104 @@ draw_window_bottom:
     pop bp
     ret 10
 
+; [bp-2]  length of string
+; [bp+4]  attribute
+; [bp+6]  string 
+; [bp+8]  column
+; [bp+10] row
+
+; printString(row, column, string, attribute) return ax = First Free column after the string
+printString:
+    push bp
+    mov bp, sp
+    sub sp, 2
+    push si
+    push di
+    push es
+    mov word [bp-2], 0
+    cld
+    mov ax, 0xb800
+    mov es, ax
+    mov ax, [bp+10]             ; row
+    push ax
+    mov ax, [bp+8]              ; column
+    push ax
+    call calculate_offset
+    mov di, ax
+    mov si, [bp+6]
+    mov ah, [bp+4]              ; attribute
+ps_next:
+    lodsb
+    or al, al
+    jz ps_end
+    stosw
+    inc word [bp-2]
+    jmp ps_next
+ps_end:
+    mov ax, [bp+8]
+    add ax, [bp-2]              ; return next column => column + length
+    pop es
+    pop di
+    pop si
+    mov sp, bp
+    pop bp
+    ret 8
+
+; [bp-4]  digits printed
+; [bp-2]  digits left
+; [bp+4]  attribute
+; [bp+6]  num
+; [bp+8]  column
+; [bp+10] row
+
+; printNum(row, column, number, attribute) return ax = column after the number
+printNum:
+    push bp
+    mov bp, sp
+    sub sp, 4
+    push bx
+    push dx
+    push di
+    push es
+    mov word [bp-2], 0
+    mov word [bp-4], 0
+    mov ax, [bp+6]
+    mov bx, 10
+pn_divide:
+    mov dx, 0
+    div bx
+    push dx                     ; remainder
+    inc word [bp-2]
+    cmp ax, 0
+    jnz pn_divide
+    mov ax, [bp+10]             ; row
+    push ax
+    mov ax, [bp+8]              ; column
+    push ax
+    call calculate_offset
+    mov di, ax
+    cld
+    mov ax, 0xb800
+    mov es, ax
+pn_next:
+    pop dx                      ; MSD First
+    mov al, dl
+    add al, 0x30                ; Convert Digit to ASCII
+    mov ah, [bp+4]
+    stosw
+    inc word [bp-4]
+    dec word [bp-2]
+    jnz pn_next
+    mov ax, [bp+8]
+    add ax, [bp-4]              ; return next column => column + digits printed
+    pop es
+    pop di
+    pop dx
+    pop bx
+    mov sp, bp
+    pop bp
+    ret 8
+
 start:          
 
 mov ax, 0x4c00
