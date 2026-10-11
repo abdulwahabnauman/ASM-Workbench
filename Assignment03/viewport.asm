@@ -47,6 +47,28 @@ doc:
  db 'Good assembly programs respect the stack discipline.',0
  db 0xFF
 
+clear_screen:   
+    push bp
+    mov bp, sp
+    push ax
+    push cx
+    push di
+    push es
+    cld
+    mov ax, 0xb800
+    mov es, ax
+    mov di, 0
+    mov ah, [bp+4]    ; attribute
+    mov al, 0x20      ; space ASCII
+    mov cx, 2000
+    rep stosw
+    pop es
+    pop di
+    pop cx
+    pop ax
+    pop bp
+    ret 2
+
 start:          
 
 mov ax, 0x4c00
