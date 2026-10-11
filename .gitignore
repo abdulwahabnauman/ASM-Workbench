@@ -1,0 +1,13 @@
+# build output
+*.com
+*.lst
+*.bin
+*.o
+
+# test files
+tester.asm
+
+# editor / OS noise
+.vscode/
+.DS_Store
+Thumbs.db
