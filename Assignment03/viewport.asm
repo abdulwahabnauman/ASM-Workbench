@@ -265,6 +265,70 @@ pn_next:
     pop bp
     ret 8
 
+; [bp-4]  width: right - left + 1
+; [bp-2]  current row
+; [bp+4]  attribute
+; [bp+6]  text pointer
+; [bp+8]  right
+; [bp+10] left
+; [bp+12] last row
+; [bp+14] first row
+
+; stream_text(firstRow, lastRow, left, right, textPtr, attr) return ax = next unread position
+; long lines wrap onto the next row
+stream_text:
+    push bp
+    mov bp, sp
+    sub sp, 4
+    push cx
+    push si
+    push di
+    push es
+    cld
+    mov ax, 0xb800
+    mov es, ax
+    mov ax, [bp+14]             ; first row
+    mov [bp-2], ax
+    mov ax, [bp+8]              ; right
+    sub ax, [bp+10]             ; - left
+    inc ax
+    mov [bp-4], ax              ; characters that fit between margins
+    mov si, [bp+6]              ; pointer to text
+st_line:
+    mov ax, [bp-2]
+    cmp ax, [bp+12]             ; last row
+    ja st_done                  ; no more rows available
+    cmp byte [si], 0xff
+    je st_done                  ; end of document
+    push ax                     ; row
+    mov ax, [bp+10]
+    push ax                     ; left
+    call calculate_offset
+    mov di, ax
+    mov ah, [bp+4]              ; attribute
+    mov cx, [bp-4]
+st_ch:
+    lodsb                       ; load in al
+    or al, al
+    jz st_eol                   ; end of line inside the width
+    stosw                       ; display from ax
+    loop st_ch
+    cmp byte [si], 0            ; check if the row to be displayed finished
+    jne st_eol                  ; no line continues on next row 
+    inc si                      ; yes skip the terminator
+st_eol:
+    inc word [bp-2]             ; move to the next row
+    jmp st_line
+st_done:
+    mov ax, si                  ; return resume pointer
+    pop es
+    pop di
+    pop si
+    pop cx
+    mov sp, bp
+    pop bp
+    ret 12
+
 start:          
 
 mov ax, 0x4c00
