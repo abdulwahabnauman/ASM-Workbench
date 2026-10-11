@@ -82,6 +82,91 @@ clear_screen:
     pop bp
     ret 2
 
+; [bp-4]  current row
+; [bp-2]  interior width
+; [bp+4]  attribute
+; [bp+6]  right
+; [bp+8]  bottom
+; [bp+10] left
+; [bp+12] top
+
+; draw_window(top, left, bottom, right, attribute)
+
+draw_window:    
+    push bp
+    mov bp, sp
+    sub sp, 4
+    push ax
+    push cx           
+    push di 
+    push es
+    cld                         ; DF = 0
+    mov ax, 0xb800
+    mov es, ax
+    mov ax, [bp+6]              ; right
+    sub ax, [bp+10]             ; left
+    dec ax
+    mov [bp-2], ax              ; columns between corners
+    mov ax, [bp+12]             ; top 
+    push ax
+    mov ax, [bp+10]             ; left
+    push ax
+    call calculate_offset
+    mov di, ax
+    mov ah, [bp+4]              ; attrubute
+    mov al, 0xc9                ; top-left corner symbol
+    stosw                       ; Once 
+    mov al, 0xcd                ; horizontal symbol
+    mov cx, [bp-2]
+    rep stosw
+    mov al, 0xbb                ; top-right corner symbol
+    stosw                       ; Once
+    mov ax, [bp+12]   
+    inc ax                      ; row below top
+    mov [bp-4], ax
+
+draw_window_rows:       
+    mov ax, [bp-4]
+    cmp ax, [bp+8]              ; Check if all rows are done
+    jae draw_window_bottom
+    push ax
+    mov ax, [bp+10]             ; left
+    push ax
+    call calculate_offset
+    mov di, ax
+    mov ah, [bp+4]
+    mov al, 0xba                ; vertical symbol
+    stosw                       ; Draw left border
+    mov cx, [bp-2]
+    shl cx, 1
+    add di, cx                  ; Skip interior columns 
+    stosw                       ; Draw rightt border
+    inc word [bp-4]             ; Next row 
+    jmp draw_window_rows
+
+draw_window_bottom:      
+    mov ax, [bp+8]               
+    push ax
+    mov ax, [bp+10]            
+    push ax
+    call calculate_offset
+    mov di, ax
+    mov ah, [bp+4]
+    mov al, 0xc8                ; bottom-left corner symbol
+    stosw                       ; Once 
+    mov al, 0xcd                ; horizontal symbol
+    mov cx, [bp-2]           
+    rep stosw 
+    mov al, 0xbc                ; bottom-right corner symbol
+    stosw                       ; Once 
+    pop es
+    pop di
+    pop cx
+    pop ax
+    mov sp, bp
+    pop bp
+    ret 10
+
 start:          
 
 mov ax, 0x4c00
