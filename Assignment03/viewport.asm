@@ -10,6 +10,7 @@ title:    db ' Text Viewport Manager - 8088 Assembly ', 0
 keyword:  db 'stack', 0                     ; pattern to be Searched 
 status_a: db 'Total Matches Found: ', 0
 status_b: db ' | Viewport Status: ACTIVE     ', 0
+resume:   dw 0    ; start of next unread text 
 
 ; Every line ends with 0
 ; Lone 0 is a blank line
@@ -650,7 +651,90 @@ refresh:
     call draw_status
     ret
 
-start:          
+start:     
+    mov ax, 0x07                ; clear the screen
+    push ax
+    call clear_screen
 
+    mov ax, 3       ; top
+    push ax
+    mov ax, 8       ; left
+    push ax
+    mov ax, 21      ; bottom
+    push ax
+    mov ax, 72      ; right
+    push ax
+    mov ax, 0x0B
+    push ax
+    call draw_window
+
+    mov ax, 3                   ; title on the top border in center
+    push ax
+    mov ax, 21                  ; 8 + (65 - 39) / 2  = left + (width - titleLength)/2
+    push ax
+    mov ax, title
+    push ax
+    mov ax, 0x1e
+    push ax
+    call printString
+
+    mov ax, 4        ; first row
+    push ax
+    mov ax, 20       ; last row 
+    push ax
+    mov ax, 10       ; left
+    push ax
+    mov ax, 70       ; right
+    push ax
+    mov ax, doc
+    push ax
+    mov ax, 0x07
+    push ax
+    call stream_text
+    mov [resume], ax
+
+    call refresh                ; highlight and status bar for current visible window 
+                                ; once per every scroll
+scroll_loop:
+    mov ax, 30                  ; 30 is speed for Scrolling 
+    push ax
+    call delay
+
+    mov bx, [resume]
+    cmp byte [bx], 0xff         ; end of document
+    je finish
+
+    mov ax, 3                   
+    push ax
+    mov ax, 8
+    push ax
+    mov ax, 21
+    push ax
+    mov ax, 72
+    push ax
+    mov ax, 1                   ; scroll window up by 1 row
+    push ax
+    call scroll_window_up
+
+    mov ax, 20                  ; first row
+    push ax
+    mov ax, 20                  ; last row 
+    push ax
+    mov ax, 10                  ; left
+    push ax
+    mov ax, 70                  ; right
+    push ax
+    mov ax, [resume]
+    push ax
+    mov ax, 0x07
+    push ax
+    call stream_text
+    mov [resume], ax
+
+    call refresh                ; re-highlight and update the count
+    jmp scroll_loop
+finish:
+    mov ah, 0
+    int 0x16                    ; wait for a key     
 mov ax, 0x4c00
 int 0x21
