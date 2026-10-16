@@ -613,6 +613,23 @@ draw_status:
     pop bp
     ret 2
 
+; delay(n) just to waste time and visualize scrolling 
+delay:         
+    push bp
+    mov bp, sp
+    push cx
+    push dx
+    mov dx, [bp+4]
+dl_outer:       
+    mov cx, 0xffff
+dl_inner:       
+    loop dl_inner
+    dec dx
+    jnz dl_outer
+    pop dx
+    pop cx
+    pop bp
+    ret 2
 
 start:          
 
