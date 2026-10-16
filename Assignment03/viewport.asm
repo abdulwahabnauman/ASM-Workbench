@@ -432,6 +432,145 @@ sw_done:
     pop bp
     ret 10
 
+; [bp-90] Stack buffer of 80 bytes 
+; [bp-10] Scan position in Stack buffer
+; [bp-8]  pattern length
+; [bp-6]  interior width : right - left - 1
+; [bp-4]  current row
+; [bp-2]  match count
+; [bp+4]  highlight attribute
+; [bp+6]  pattern terminated by 0 
+; [bp+8]  right
+; [bp+10] bottom
+; [bp+12] left
+; [bp+14] top
+
+; find_and_highlight(top, left, bottom, right, pattern, attribute) return ax = number of matches
+; copies each row's characters into a stack,then scans it for pattern 
+; with SCASB + REPE CMPSB and rewrites only attribute 
+find_and_highlight:
+    push bp
+    mov bp, sp
+    sub sp, 90
+    push bx
+    push cx
+    push si
+    push di
+    push ds
+    push es
+    cld
+    mov word [bp-2], 0          ; match count
+    mov ax, cs
+    mov ds, ax                  
+    mov es, ax
+    mov di, [bp+6]              ; pattern 
+    xor al, al
+    mov cx, 0xffff
+    repne scasb                 ; find terminating 0
+    mov ax, 0xfffe
+    sub ax, cx
+    mov [bp-8], ax              ; pattern length
+    mov ax, [bp+8]              ; right
+    sub ax, [bp+12]             ; - left
+    dec ax
+    mov [bp-6], ax              ; interior width
+    cmp word [bp-8], 0
+    je fh_done                  ; empty check
+    cmp ax, [bp-8]              ; row length less than pattern length
+    jl fh_done                  ; pattern longer than the window
+    mov ax, [bp+14]             ; top
+    inc ax                      ; skip border
+    mov [bp-4], ax              ; first interior row
+
+fh_row:
+    mov ax, [bp-4]              ; current row 
+    cmp ax, [bp+10]             ; bottom
+    jae fh_done                 
+    push ax                     ; row
+    mov ax, [bp+12]             ; left column
+    inc ax                      
+    push ax
+    call calculate_offset
+    mov si, ax                  ; start of row 
+    mov ax, 0xb800
+    mov ds, ax                  ; DS:SI row on Video Memory
+    mov ax, ss
+    mov es, ax
+    mov di, bp
+    sub di, 90                  ; ES:DI row on Stack 
+    mov cx, [bp-6]
+fh_copy:
+    lodsb                       ; load a byte from AL from Video Memory
+    inc si                      ; no Need for Attribute byte
+    stosb                       ; store loaded byte in Stack
+    loop fh_copy
+    mov ax, cs
+    mov ds, ax                  ; pattern segment
+    mov word [bp-10], 0         
+
+fh_pos:
+    mov ax, ss
+    mov es, ax
+    mov ax, [bp-6]
+    sub ax, [bp-8]              
+    cmp [bp-10], ax
+    ja fh_nextrow
+    mov bx, [bp+6]              ; pattern
+    mov al, [bx]                ; pattern first character
+    mov di, bp
+    sub di, 90
+    add di, [bp-10]             ; buffer + position
+    scasb                       
+    jne fh_nomatch              ; move to next position on stack 
+    mov si, bx
+    inc si    
+    mov cx, [bp-8]                  
+    dec cx                      ; characters still to compare
+    cmp al, al                  ; 1 char pattern check 
+    repe cmpsb
+    jne fh_nomatch
+    inc word [bp-2]             ; match found
+    mov ax, [bp-4]              ; current row
+    push ax
+    mov ax, [bp+12]
+    inc ax
+    add ax, [bp-10]             ; column = left + 1 + position
+    push ax
+    call calculate_offset
+    mov di, ax
+    inc di                      ; point at the attribute byte
+    mov ax, 0xb800
+    mov es, ax
+    mov cx, [bp-8]
+    mov al, [bp+4]              ; load new attribute
+fh_hl:
+    stosb                       ; change attribute only
+    inc di                      ; skip character byte
+    loop fh_hl
+    mov ax, [bp-8]
+    add [bp-10], ax             ; continue after the match
+    jmp fh_pos
+
+fh_nomatch:
+    inc word [bp-10]
+    jmp fh_pos
+
+fh_nextrow:
+    inc word [bp-4]
+    jmp fh_row
+
+fh_done:
+    mov ax, [bp-2]              ; return match count
+    pop es
+    pop ds
+    pop di
+    pop si
+    pop cx
+    pop bx
+    mov sp, bp
+    pop bp
+    ret 12
+
 start:          
 
 mov ax, 0x4c00
