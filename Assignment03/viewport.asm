@@ -571,6 +571,49 @@ fh_done:
     pop bp
     ret 12
 
+; [bp-2]  next free column
+; [bp+4]  match count
+; draw_status(count)
+draw_status:
+    push bp
+    mov bp, sp
+    sub sp, 2
+    push ax
+    mov ax, 23                  ; row
+    push ax
+    mov ax, 8                   ; column
+    push ax
+    mov ax, status_a
+    push ax
+    mov ax, 0x0f                ; attribute
+    push ax
+    call printString            ; return AX having next column
+    mov [bp-2], ax
+    mov ax, 23
+    push ax
+    mov ax, [bp-2]
+    push ax
+    mov ax, [bp+4]              ; the match count
+    push ax
+    mov ax, 0x0f
+    push ax
+    call printNum               ; return AX having next column
+    mov [bp-2], ax
+    mov ax, 23
+    push ax
+    mov ax, [bp-2]
+    push ax
+    mov ax, status_b
+    push ax
+    mov ax, 0x0f
+    push ax
+    call printString
+    pop ax
+    mov sp, bp
+    pop bp
+    ret 2
+
+
 start:          
 
 mov ax, 0x4c00
