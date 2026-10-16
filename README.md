@@ -28,10 +28,11 @@ ASM-Workbench/
 ├── README.md
 ├── .gitignore
 ├── screenshots/
-│   └── Assignment03/
-│       ├── 01_initial_view.png
-│       ├── 02_after_scroll.png
-│       └── 03_end_of_document.png
+│       ├── 00_assemble_and_run.png
+│       ├── 01_initial_window_with_title.png
+│       ├── 02_text_streamed_before_scroll.png
+│       ├── 03_after_scroll_up.png
+│       └── 04_final_highlighted_status_bar.png
 └── Assignment03/
     └── viewport.asm
 ```
