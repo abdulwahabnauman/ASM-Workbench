@@ -87,6 +87,19 @@ keep locals at `[bp - offset]`, preserve every register they modify, and clean u
 | `delay` | n | none | `ret 2` | Busy-wait loop so the scrolling is visible. |
 | `refresh` | none | none | `ret` | Helper that calls `find_and_highlight` and then `draw_status` for the current view. It is called after every scroll. |
 
+### Stack frame layout 
+
+```
+        [bp+4 ...]  parameters 
+        [bp+2]      return address
+ BP ->  [bp]        saved BP
+        [bp-2 ...]  local variables 
+                    saved registers 
+```
+
+Procedures exit with `mov sp, bp` / `pop bp` / `ret n`, so the caller never has to adjust SP.
+
+
 
 
 
