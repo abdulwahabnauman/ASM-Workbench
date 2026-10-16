@@ -55,6 +55,19 @@ c:
 viewport.com
 ```
 
+## Program Description
+
+`viewport.asm` is a 16-bit 8088 program (DOS `.COM`, `[org 0x0100]`) that builds a
+text-mode document viewer directly in video memory (segment `0xB800`, 80x25):
+
+1. Clears the screen using `REP STOSW`.
+2. Draws a double-line window (rows 3-21, columns 8-72) with a centered title (attribute `0x1E`).
+3. Streams a multi-line document into the window using `LODSB`/`STOSW`, inside 2-column margins.
+4. Scrolls only the window interior upward one row at a time (`REP MOVSW`), blanks the vacated row, and streams in the next line. The border and outer screen are never touched.
+5. After each scroll it searches the visible text for the keyword `stack` and highlights every match (attribute `0xCE`, blinking yellow on red) without changing the characters.
+6. Shows a status bar on row 23: `Total Matches Found: N | Viewport Status: ACTIVE`.
+7. When the document ends, it waits for a key press and exits to DOS.
+
 
 
 
