@@ -99,7 +99,24 @@ keep locals at `[bp - offset]`, preserve every register they modify, and clean u
 
 Procedures exit with `mov sp, bp` / `pop bp` / `ret n`, so the caller never has to adjust SP.
 
+## Screenshots
 
+![Assemble and run](screenshots/Assignment03/00_assemble_and_run.png)
+*Assembling with NASM and running `viewport.com` in DOSBox.*
+
+![Initial window](screenshots/Assignment03/01_initial_window_with_title.png)
+*Cleared screen with the bordered viewport and centered title (`0x1E`).*
+
+![Text streamed](screenshots/Assignment03/02_text_streamed_before_scroll.png)
+*Document streamed into the window; 3 matches of "stack" highlighted (`0xCE`).*
+
+![After scroll](screenshots/Assignment03/03_after_scroll_up.png)
+*After several scroll-up steps: only the interior moved, the border is intact, and the count is recalculated for the visible text.*
+
+![Final](screenshots/Assignment03/04_final_highlighted_status_bar.png)
+*End of document: last lines visible, vacated rows blanked, status bar shows the final count.*
+
+> The match count reflects the text **currently visible** in the window, so it changes as lines scroll in and out.
 
 
 
