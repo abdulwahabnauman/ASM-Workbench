@@ -631,6 +631,25 @@ dl_inner:
     pop bp
     ret 2
 
+; refresh()  to highlight again and redraw the status bar
+refresh:        
+    mov ax, 3
+    push ax
+    mov ax, 8
+    push ax
+    mov ax, 21
+    push ax
+    mov ax, 72
+    push ax
+    mov ax, keyword
+    push ax
+    mov ax, 0xce                ; blinking yellow on red
+    push ax
+    call find_and_highlight     ; return AX having match count 
+    push ax
+    call draw_status
+    ret
+
 start:          
 
 mov ax, 0x4c00
